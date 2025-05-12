@@ -12,48 +12,34 @@ interface PriceComparisonResult {
   }>
 }
 
-// Safe function to convert any value to a string
 function safeString(value: any): string {
   if (value === null || value === undefined) return ""
   return String(value)
 }
 
-// Safe function to convert any value to a number
 function safeNumber(value: any): number {
   if (value === null || value === undefined) return 0
   const num = Number(value)
   return isNaN(num) ? 0 : num
 }
 
-// Real price comparison using multiple e-commerce APIs and web scraping
 export async function comparePrices(title: any, price: any): Promise<PriceComparisonResult> {
   try {
-    // Ensure title is a string and not undefined
     const safeTitle = safeString(title)
-
-    // Remove currency symbol and convert to number
-    // Ensure price is a string and not undefined
     const safePrice = safeString(price)
     const cleanPrice = safeNumber(safePrice.replace(/[^0-9.]/g, ""))
-
-    // Extract keywords from title for better search results
     const keywords = extractKeywords(safeTitle)
-
-    // Detect the product category
     const category = detectCategory(safeTitle)
     console.log(`Detected category: ${category} for title: ${safeTitle}`)
 
-    // Get prices from multiple sources based on the category
     let results = []
 
     try {
-      // Different search strategies based on category
       if (category === "motorcycle" || category === "vehicle") {
         results = await searchVehicles(keywords, category)
       } else if (category === "real_estate") {
         results = await searchRealEstate(keywords)
       } else {
-        // Standard product searches
         const [amazonResults, ebayResults, walmartResults] = await Promise.allSettled([
           searchAmazon(keywords, category),
           searchEbay(keywords, category),
@@ -72,24 +58,17 @@ export async function comparePrices(title: any, price: any): Promise<PriceCompar
       console.error("Error searching for prices:", error)
     }
 
-    // If we don't have enough results, return a category-specific comparison
     if (results.length < 2) {
       return createCategoryComparison(safeTitle, cleanPrice, category)
     }
 
-    // Calculate statistics
     const prices = results.map((item) => safeNumber(item.price))
     const averagePrice = prices.reduce((sum, price) => sum + price, 0) / prices.length
     const lowestPrice = Math.min(...prices)
     const highestPrice = Math.max(...prices)
-
-    // Calculate percentage difference from average price
     const percentageDifference = averagePrice > 0 ? ((averagePrice - cleanPrice) / averagePrice) * 100 : 0
-
-    // Determine if price is suspiciously low (more than 40% below average)
     const isSuspiciouslyLow = percentageDifference > 40
 
-    // Format alternatives for display
     const alternatives = results.slice(0, 5).map((item) => ({
       title: safeString(item.title),
       price: `$${safeNumber(item.price).toFixed(2)}`,
@@ -107,19 +86,16 @@ export async function comparePrices(title: any, price: any): Promise<PriceCompar
     }
   } catch (error) {
     console.error("Error in price comparison:", error)
-    // Even if there's an error, return a basic comparison
     const category = detectCategory(safeString(title))
     return createCategoryComparison(safeString(title), safeNumber(safeString(price).replace(/[^0-9.]/g, "")), category)
   }
 }
 
-// Extract keywords from title
 function extractKeywords(title: any): string {
   const safeTitle = safeString(title)
   if (!safeTitle) return "product"
 
   try {
-    // Remove common filler words and keep important product identifiers
     const words = safeTitle.toLowerCase().split(/\s+/)
     const filteredWords = words.filter(
       (word) =>
@@ -127,15 +103,12 @@ function extractKeywords(title: any): string {
         !["the", "and", "for", "with", "new", "used", "like", "good", "great", "condition", "sale"].includes(word),
     )
 
-    // Try to identify product model or key identifiers
     const modelRegex = /([a-z0-9]+-[a-z0-9]+|[a-z][0-9]+|[0-9]+[a-z]+)/g
     const possibleModels = safeTitle.match(modelRegex) || []
 
-    // Extract years (often important for vehicles, electronics)
     const yearRegex = /(19|20)\d{2}/g
     const years = safeTitle.match(yearRegex) || []
 
-    // Combine important keywords
     const result = [...years, ...possibleModels, ...filteredWords.slice(0, 4)].join(" ")
     return result || "product"
   } catch (error) {
@@ -144,16 +117,13 @@ function extractKeywords(title: any): string {
   }
 }
 
-// Detect product category from title
 function detectCategory(title: any): string {
   try {
-    // Ensure title is a string and not undefined
     const safeTitle = safeString(title)
     if (!safeTitle) return "electronics"
 
     const titleLower = safeTitle.toLowerCase()
 
-    // Vehicle detection
     if (
       titleLower.includes("car") ||
       titleLower.includes("truck") ||
@@ -176,7 +146,6 @@ function detectCategory(title: any): string {
       return "vehicle"
     }
 
-    // Motorcycle detection
     if (
       titleLower.includes("motorcycle") ||
       titleLower.includes("bike") ||
@@ -194,7 +163,6 @@ function detectCategory(title: any): string {
       return "motorcycle"
     }
 
-    // Real estate detection
     if (
       titleLower.includes("house") ||
       titleLower.includes("apartment") ||
@@ -208,7 +176,6 @@ function detectCategory(title: any): string {
       return "real_estate"
     }
 
-    // Smartphone detection
     if (
       titleLower.includes("iphone") ||
       (titleLower.includes("samsung") && (titleLower.includes("galaxy") || titleLower.includes("phone"))) ||
@@ -221,7 +188,6 @@ function detectCategory(title: any): string {
       return "smartphone"
     }
 
-    // Laptop detection
     if (
       titleLower.includes("macbook") ||
       titleLower.includes("laptop") ||
@@ -235,7 +201,6 @@ function detectCategory(title: any): string {
       return "laptop"
     }
 
-    // Gaming detection
     if (
       titleLower.includes("playstation") ||
       titleLower.includes("ps5") ||
@@ -250,7 +215,6 @@ function detectCategory(title: any): string {
       return "gaming"
     }
 
-    // Camera detection
     if (
       titleLower.includes("camera") ||
       titleLower.includes("canon") ||
@@ -264,7 +228,6 @@ function detectCategory(title: any): string {
       return "camera"
     }
 
-    // Audio detection
     if (
       titleLower.includes("headphones") ||
       titleLower.includes("earbuds") ||
@@ -279,7 +242,6 @@ function detectCategory(title: any): string {
       return "audio"
     }
 
-    // Furniture detection
     if (
       titleLower.includes("sofa") ||
       titleLower.includes("couch") ||
@@ -295,7 +257,6 @@ function detectCategory(title: any): string {
       return "furniture"
     }
 
-    // Appliance detection
     if (
       titleLower.includes("refrigerator") ||
       titleLower.includes("fridge") ||
@@ -310,7 +271,6 @@ function detectCategory(title: any): string {
       return "appliance"
     }
 
-    // Jewelry detection
     if (
       titleLower.includes("ring") ||
       titleLower.includes("necklace") ||
@@ -324,7 +284,6 @@ function detectCategory(title: any): string {
       return "jewelry"
     }
 
-    // Clothing detection
     if (
       titleLower.includes("shirt") ||
       titleLower.includes("pants") ||
@@ -346,18 +305,11 @@ function detectCategory(title: any): string {
   }
 }
 
-// Search for vehicles
 async function searchVehicles(keywords: string, category: string) {
   try {
-    // In a real implementation, this would use vehicle listing APIs
-    // For this demo, we'll simulate results
     const isMotorcycle = category === "motorcycle"
-
-    // Extract year if present
     const yearMatch = keywords.match(/(19|20)\d{2}/)
     const year = yearMatch ? yearMatch[0] : null
-
-    // Extract make if present
     const makes = isMotorcycle
       ? ["Yamaha", "Honda", "Kawasaki", "Suzuki", "Harley-Davidson", "Ducati", "BMW", "Triumph", "KTM"]
       : ["Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi", "Lexus"]
@@ -370,44 +322,28 @@ async function searchVehicles(keywords: string, category: string) {
       }
     }
 
-    // Generate 3-5 similar vehicle listings
     const count = Math.floor(Math.random() * 3) + 3
     const results = []
-
-    // Base price range for the detected vehicle type
     let basePrice = isMotorcycle ? 5000 : 15000
     if (year) {
-      // Adjust price based on year
       const currentYear = new Date().getFullYear()
       const age = currentYear - Number.parseInt(year)
       basePrice = isMotorcycle ? Math.max(2000, 12000 - age * 500) : Math.max(5000, 35000 - age * 1500)
     }
 
-    // Generate listings
     for (let i = 0; i < count; i++) {
-      // Vary the price by ±20%
       const priceVariation = Math.random() * 0.4 - 0.2
       const price = basePrice * (1 + priceVariation)
-
-      // Generate year if not detected (within 3 years of detected year)
       let listingYear = year ? Number.parseInt(year) : 2015 + Math.floor(Math.random() * 8)
       if (year) {
         listingYear = Number.parseInt(year) + (Math.floor(Math.random() * 7) - 3)
       }
 
-      // Generate make if not detected
       const listingMake = detectedMake !== "Unknown" ? detectedMake : makes[Math.floor(Math.random() * makes.length)]
-
-      // Generate model
       const models = isMotorcycle ? getMotorcycleModels(listingMake) : getCarModels(listingMake)
-
       const model = models[Math.floor(Math.random() * models.length)]
-
-      // Generate condition
       const conditions = ["Excellent", "Good", "Fair", "Like New"]
       const condition = conditions[Math.floor(Math.random() * conditions.length)]
-
-      // Generate listing source
       const sources = isMotorcycle
         ? ["CycleTrader", "Motorcycle.com", "RevZilla", "Craigslist", "Facebook Marketplace"]
         : ["AutoTrader", "Cars.com", "CarGurus", "Craigslist", "Facebook Marketplace"]
@@ -429,7 +365,6 @@ async function searchVehicles(keywords: string, category: string) {
   }
 }
 
-// Get motorcycle models for a given make
 function getMotorcycleModels(make: string): string[] {
   const modelsByMake: Record<string, string[]> = {
     Yamaha: ["YZF-R6", "YZF-R1", "MT-07", "MT-09", "Bolt", "V-Star", "FZ-07", "FZ-09", "Tenere 700"],
@@ -446,7 +381,6 @@ function getMotorcycleModels(make: string): string[] {
   return modelsByMake[make] || ["Model Unknown"]
 }
 
-// Get car models for a given make
 function getCarModels(make: string): string[] {
   const modelsByMake: Record<string, string[]> = {
     Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "Tacoma", "4Runner", "Prius", "Sienna"],
@@ -463,47 +397,25 @@ function getCarModels(make: string): string[] {
   return modelsByMake[make] || ["Model Unknown"]
 }
 
-// Search for real estate
 async function searchRealEstate(keywords: string) {
   try {
-    // In a real implementation, this would use real estate APIs
-    // For this demo, we'll simulate results
-
-    // Extract bedrooms and bathrooms if present
     const bedroomMatch = keywords.match(/(\d+)\s*(?:bed|bedroom|br)/i)
     const bathroomMatch = keywords.match(/(\d+)\s*(?:bath|bathroom|ba)/i)
-
     const bedrooms = bedroomMatch ? Number.parseInt(bedroomMatch[1]) : Math.floor(Math.random() * 3) + 2
     const bathrooms = bathroomMatch ? Number.parseInt(bathroomMatch[1]) : Math.floor(Math.random() * 2) + 1
-
-    // Extract location if present
     const locationMatch = keywords.match(/in\s+([a-z\s]+)/i)
     const location = locationMatch ? locationMatch[1] : "the area"
-
-    // Generate 3-4 similar property listings
     const count = Math.floor(Math.random() * 2) + 3
     const results = []
-
-    // Base price for properties
     const basePrice = 250000 + bedrooms * 50000 + bathrooms * 25000
-
-    // Property types
     const propertyTypes = ["House", "Condo", "Townhouse", "Apartment"]
 
-    // Generate listings
     for (let i = 0; i < count; i++) {
-      // Vary the price by ±15%
       const priceVariation = Math.random() * 0.3 - 0.15
       const price = basePrice * (1 + priceVariation)
-
-      // Vary bedrooms and bathrooms slightly
       const listingBedrooms = bedrooms + (Math.floor(Math.random() * 3) - 1)
       const listingBathrooms = bathrooms + (Math.floor(Math.random() * 2) - 0.5)
-
-      // Generate property type
       const propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)]
-
-      // Generate listing source
       const sources = ["Zillow", "Redfin", "Trulia", "Realtor.com", "Century 21"]
       const source = sources[Math.floor(Math.random() * sources.length)]
 
@@ -522,11 +434,8 @@ async function searchRealEstate(keywords: string) {
   }
 }
 
-// Search Amazon for product prices
 async function searchAmazon(keywords: string, category: string) {
   try {
-    // In a real implementation, this would use Amazon's Product Advertising API
-    // For this demo, we'll simulate results
     return simulateAmazonResults(keywords, category)
   } catch (error) {
     console.error("Error searching Amazon:", error)
@@ -534,11 +443,8 @@ async function searchAmazon(keywords: string, category: string) {
   }
 }
 
-// Search eBay for product prices
 async function searchEbay(keywords: string, category: string) {
   try {
-    // In a real implementation, this would use eBay's Finding API
-    // For this demo, we'll simulate results
     return simulateEbayResults(keywords, category)
   } catch (error) {
     console.error("Error searching eBay:", error)
@@ -546,11 +452,8 @@ async function searchEbay(keywords: string, category: string) {
   }
 }
 
-// Search Walmart for product prices
 async function searchWalmart(keywords: string, category: string) {
   try {
-    // In a real implementation, this would use Walmart's Open API
-    // For this demo, we'll simulate results
     return simulateWalmartResults(keywords, category)
   } catch (error) {
     console.error("Error searching Walmart:", error)
@@ -558,21 +461,13 @@ async function searchWalmart(keywords: string, category: string) {
   }
 }
 
-// Create a category-specific comparison when we don't have enough data
 function createCategoryComparison(title: any, price: any, category: string): PriceComparisonResult {
   try {
-    // Ensure title is a string
     const safeTitle = safeString(title)
     const safePrice = safeNumber(price)
-
-    // Estimate a reasonable price range based on the product category
     const { avgPrice, minPrice, maxPrice } = getPriceRangeForCategory(category, safePrice)
-
-    // Calculate percentage difference
     const percentageDifference = avgPrice > 0 ? ((avgPrice - safePrice) / avgPrice) * 100 : 0
     const isSuspiciouslyLow = percentageDifference > 40
-
-    // Generate category-specific alternatives
     const alternatives = generateAlternativesForCategory(category, avgPrice, safeTitle)
 
     return {
@@ -585,7 +480,6 @@ function createCategoryComparison(title: any, price: any, category: string): Pri
     }
   } catch (error) {
     console.error("Error creating category comparison:", error)
-    // Return absolute fallback values
     return {
       averagePrice: 100,
       lowestPrice: 80,
@@ -604,7 +498,6 @@ function createCategoryComparison(title: any, price: any, category: string): Pri
   }
 }
 
-// Get price range for a category
 function getPriceRangeForCategory(
   category: string,
   price: number,
@@ -636,7 +529,6 @@ function getPriceRangeForCategory(
   }
 }
 
-// Generate alternatives for a category
 function generateAlternativesForCategory(
   category: any,
   avgPrice: any,
@@ -646,19 +538,13 @@ function generateAlternativesForCategory(
     const safeCategory = safeString(category)
     const safeAvgPrice = safeNumber(avgPrice)
     const safeTitle = safeString(title)
-
-    // Extract year if present (useful for vehicles, electronics)
     const yearMatch = safeTitle.match(/(19|20)\d{2}/)
     const year = yearMatch ? yearMatch[0] : null
-
-    // Extract make/brand if present
     const words = safeTitle.split(/\s+/)
     const possibleBrands = words.filter((word) => word.length > 2)
     const brand = possibleBrands.length > 0 ? possibleBrands[0] : null
 
-    // Category-specific alternatives
     if (safeCategory === "motorcycle") {
-      // Detect motorcycle make
       const motorcycleMakes = ["Yamaha", "Honda", "Kawasaki", "Suzuki", "Harley", "Ducati", "BMW", "Triumph", "KTM"]
       let detectedMake = "Unknown"
 
@@ -696,7 +582,6 @@ function generateAlternativesForCategory(
     }
 
     if (safeCategory === "vehicle") {
-      // Detect vehicle make
       const vehicleMakes = ["Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "BMW", "Mercedes", "Audi", "Lexus"]
       let detectedMake = "Unknown"
 
@@ -733,7 +618,6 @@ function generateAlternativesForCategory(
       ]
     }
 
-    // Standard product alternatives by category
     const alternatives: Record<string, Array<{ title: string; price: string; url: string; trusted: boolean }>> = {
       smartphone: [
         {
@@ -886,19 +770,15 @@ function generateAlternativesForCategory(
   }
 }
 
-// Simulate Amazon results - in a real app, this would use the Amazon API
 function simulateAmazonResults(keywords: string, category: string) {
   try {
     const safeKeywords = safeString(keywords)
     const safeCategory = safeString(category)
     const { avgPrice } = getPriceRangeForCategory(safeCategory, 0)
-
-    // Generate 2-4 results with slight price variations
     const count = Math.floor(Math.random() * 3) + 2
     const results = []
 
     for (let i = 0; i < count; i++) {
-      // Vary the price by ±15%
       const priceVariation = Math.random() * 0.3 - 0.15
       const price = avgPrice * (1 + priceVariation)
 
@@ -917,19 +797,15 @@ function simulateAmazonResults(keywords: string, category: string) {
   }
 }
 
-// Simulate eBay results - in a real app, this would use the eBay API
 function simulateEbayResults(keywords: string, category: string) {
   try {
     const safeKeywords = safeString(keywords)
     const safeCategory = safeString(category)
     const { avgPrice } = getPriceRangeForCategory(safeCategory, 0)
-
-    // Generate 1-3 results with more price variations (eBay tends to have more variance)
     const count = Math.floor(Math.random() * 3) + 1
     const results = []
 
     for (let i = 0; i < count; i++) {
-      // Vary the price by ±25%
       const priceVariation = Math.random() * 0.5 - 0.25
       const price = avgPrice * (1 + priceVariation)
 
@@ -937,7 +813,7 @@ function simulateEbayResults(keywords: string, category: string) {
         title: `eBay: ${getProductNameForCategory(safeCategory)} ${i === 0 ? "(Like New)" : "(Used)"}`,
         price: price,
         url: `https://www.ebay.com/itm/${generateRandomId()}`,
-        trusted: i === 0, // Only the top result is from a trusted seller
+        trusted: i === 0,
       })
     }
 
@@ -948,19 +824,15 @@ function simulateEbayResults(keywords: string, category: string) {
   }
 }
 
-// Simulate Walmart results - in a real app, this would use the Walmart API
 function simulateWalmartResults(keywords: string, category: string) {
   try {
     const safeKeywords = safeString(keywords)
     const safeCategory = safeString(category)
     const { avgPrice } = getPriceRangeForCategory(safeCategory, 0)
-
-    // Generate 1-2 results with slight price variations
     const count = Math.floor(Math.random() * 2) + 1
     const results = []
 
     for (let i = 0; i < count; i++) {
-      // Vary the price by ±10%
       const priceVariation = Math.random() * 0.2 - 0.1
       const price = avgPrice * (1 + priceVariation)
 
@@ -979,7 +851,6 @@ function simulateWalmartResults(keywords: string, category: string) {
   }
 }
 
-// Get a product name for a category
 function getProductNameForCategory(category: any): string {
   try {
     const safeCategory = safeString(category)
@@ -1007,7 +878,6 @@ function getProductNameForCategory(category: any): string {
   }
 }
 
-// Generate a random ID for product URLs
 function generateRandomId(): string {
   try {
     return Math.random().toString(36).substring(2, 10).toUpperCase()

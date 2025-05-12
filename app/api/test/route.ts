@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Force Node.js runtime
 export const runtime = "nodejs"
 
 export async function GET(request: NextRequest) {
@@ -16,10 +15,8 @@ export async function POST(request: NextRequest) {
       console.error("Error parsing request body:", error)
     }
 
-    // Log the request body
     console.log("Test endpoint received:", body)
 
-    // Return the body with some additional info
     return NextResponse.json({
       status: "ok",
       received: body,

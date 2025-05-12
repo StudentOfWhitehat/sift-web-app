@@ -1,22 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
-// Force Node.js runtime
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
-    // Get request data with safe defaults
     let requestData = {}
     try {
       requestData = await request.json()
     } catch (error) {
       console.log("Error parsing JSON:", error)
-      // Continue with empty object
     }
 
-    // Ensure all values are strings with safe defaults
-    // Use empty strings instead of null or undefined
     const title = typeof requestData?.title === "string" ? requestData.title : ""
     const description = typeof requestData?.description === "string" ? requestData.description : ""
     const price = typeof requestData?.price === "string" ? requestData.price : ""
@@ -24,19 +19,16 @@ export async function POST(request: NextRequest) {
 
     console.log("Analyzing text for:", { title, description: description.substring(0, 50) + "..." })
 
-    // Always use real OpenAI
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       throw new Error("Missing OpenAI API key")
     }
 
-    // Add dangerouslyAllowBrowser: true to fix the error
     const openai = new OpenAI({
       apiKey,
       dangerouslyAllowBrowser: true,
     })
 
-    // Create a safe prompt with no undefined values
     const prompt = `
       Analyze this online marketplace listing for potential scam indicators:
       
@@ -105,7 +97,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error in text analysis API:", error)
 
-    // Return a fallback response with default values
     return NextResponse.json({
       title: "Analysis unavailable",
       scamScore: 50,

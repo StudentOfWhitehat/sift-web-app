@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { comparePrices } from "@/lib/price-comparison"
 
-// Force Node.js runtime
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
@@ -22,10 +21,8 @@ export async function POST(request: NextRequest) {
 
     console.log("Testing price comparison for:", { title, price })
 
-    // Run the price comparison
     const result = await comparePrices(title, price)
 
-    // Log the detected category and alternatives
     console.log("Price comparison result:", {
       category: "Detected from keywords",
       alternatives: result.alternatives.map((alt) => alt.title),

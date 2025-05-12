@@ -2,23 +2,19 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase"
 import { comparePrices } from "@/lib/price-comparison"
 
-// Force Node.js runtime
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
 
-    // Get request data with safe defaults
     let data = {}
     try {
       data = await request.json()
     } catch (error) {
       console.error("Error parsing request JSON:", error)
-      // Continue with empty object
     }
 
-    // Ensure all values are strings with safe defaults
     const url = typeof data?.url === "string" ? data.url : null
     const title = typeof data?.title === "string" ? data.title : "Unknown listing"
     const description = typeof data?.description === "string" ? data.description : ""
@@ -28,10 +24,8 @@ export async function POST(request: NextRequest) {
 
     console.log("Processing scan for:", { title, price })
 
-    // Analyze listing text using separate API endpoint
     let textAnalysis
     try {
-      // Create a safe payload with no undefined values
       const textAnalysisPayload = {
         title: title || "Unknown listing",
         description: description || "",
@@ -55,7 +49,6 @@ export async function POST(request: NextRequest) {
       textAnalysis = await textAnalysisResponse.json()
     } catch (error) {
       console.error("Error calling text analysis API:", error)
-      // Provide default values if analysis fails
       textAnalysis = {
         title: title || "Unknown listing",
         scamScore: 50,
@@ -64,7 +57,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Compare prices with real e-commerce data
     let priceComparison
     try {
       console.log("Calling comparePrices with:", { title, price })
@@ -75,7 +67,6 @@ export async function POST(request: NextRequest) {
       })
     } catch (error) {
       console.error("Error in price comparison:", error)
-      // Provide default values if comparison fails
       priceComparison = {
         averagePrice: 0,
         lowestPrice: 0,
@@ -86,7 +77,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Analyze image if provided
     let imageAnalysis = null
     if (imageUrl) {
       try {
@@ -103,7 +93,6 @@ export async function POST(request: NextRequest) {
         imageAnalysis = await imageAnalysisResponse.json()
       } catch (error) {
         console.error("Error calling image analysis API:", error)
-        // Provide default values if analysis fails
         imageAnalysis = {
           isStockImage: false,
           containsText: false,
@@ -113,15 +102,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate final scam score
     let finalScamScore = textAnalysis?.scamScore || 50
 
-    // Adjust score based on price comparison
     if (priceComparison?.isSuspiciouslyLow) {
       finalScamScore += 15
     }
 
-    // Adjust score based on image analysis
     if (imageAnalysis) {
       if (imageAnalysis.isStockImage) {
         finalScamScore += 10
@@ -132,10 +118,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cap the score at 100
     finalScamScore = Math.min(finalScamScore, 100)
 
-    // Combine red flags
     const redFlags = [...(textAnalysis?.redFlags || [])]
 
     if (priceComparison?.isSuspiciouslyLow) {
@@ -159,7 +143,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Store scan results in database
     let scan
     try {
       const { data: scanData, error: scanError } = await supabase
@@ -180,7 +163,6 @@ export async function POST(request: NextRequest) {
 
       scan = scanData
 
-      // Store red flags
       if (redFlags.length > 0) {
         const redFlagsToInsert = redFlags.map((flag) => ({
           scan_id: scan.id,
@@ -191,7 +173,6 @@ export async function POST(request: NextRequest) {
         await supabase.from("red_flags").insert(redFlagsToInsert)
       }
 
-      // Store alternatives
       if (priceComparison?.alternatives && priceComparison.alternatives.length > 0) {
         const alternativesToInsert = priceComparison.alternatives.map((alt) => ({
           scan_id: scan.id,
@@ -205,7 +186,6 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error("Error storing scan data:", error)
-      // Create a mock scan object if database storage fails
       scan = {
         id: `temp-${Date.now()}`,
         title: title || "Unknown listing",
@@ -217,7 +197,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return the complete analysis
     return NextResponse.json({
       id: scan.id,
       title: title || "Unknown listing",
@@ -239,7 +218,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to analyze listing",
-        // Provide a minimal response so the UI doesn't break
         id: `error-${Date.now()}`,
         title: "Error analyzing listing",
         scamScore: 50,
