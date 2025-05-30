@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
     const result = await comparePrices(title, price)
 
     console.log("Price comparison result:", {
-      category: "Detected from keywords",
       alternatives: result.alternatives.map((alt) => alt.title),
       averagePrice: result.averagePrice,
       percentageDifference: result.percentageDifference,

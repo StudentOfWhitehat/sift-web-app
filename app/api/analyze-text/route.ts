@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (openaiError) {
       console.error("OpenAI API error:", openaiError)
-      throw new Error(`OpenAI API error: ${openaiError.message || "Unknown error"}`)
+      throw new Error(`OpenAI API error: ${openaiError instanceof Error ? openaiError.message : "Unknown error"}`)
     }
   } catch (error) {
     console.error("Error in text analysis API:", error)

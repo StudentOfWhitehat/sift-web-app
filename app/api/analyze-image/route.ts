@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
-// Force Node.js runtime
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
-    // Get request data with safe defaults
     let requestData
     try {
       requestData = await request.json()
@@ -14,20 +12,17 @@ export async function POST(request: NextRequest) {
       requestData = {}
     }
 
-    // Ensure imageUrl is a string
     const imageUrl = typeof requestData.imageUrl === "string" ? requestData.imageUrl : null
 
     if (!imageUrl) {
       throw new Error("No image URL provided")
     }
 
-    // Always use real OpenAI
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       throw new Error("Missing OpenAI API key")
     }
 
-    // Add dangerouslyAllowBrowser: true to fix the error
     const openai = new OpenAI({
       apiKey,
       dangerouslyAllowBrowser: true,
@@ -64,7 +59,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error in image analysis API:", error)
 
-    // Return a fallback response with default values
     return NextResponse.json({
       isStockImage: false,
       containsText: false,

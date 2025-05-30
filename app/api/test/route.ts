@@ -26,6 +26,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error in test endpoint:", error)
-    return NextResponse.json({ status: "error", message: error.message || "Unknown error" }, { status: 500 })
+    return NextResponse.json(
+      {
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }
